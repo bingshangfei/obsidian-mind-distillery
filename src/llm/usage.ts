@@ -67,6 +67,12 @@ export class UsageLedger {
 		return this.total();
 	}
 
+	/** Clear the running totals (settings "Reset" button). */
+	reset(): void {
+		this.records.length = 0;
+		this.byCall.clear();
+	}
+
 	restore(totals: UsageTotals | undefined): void {
 		if (!totals) return;
 		// Rehydrated history is kept as a synthetic bucket so per-reload records never double count.

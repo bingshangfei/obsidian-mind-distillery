@@ -1,5 +1,5 @@
 import { Notice, Plugin, normalizePath, WorkspaceLeaf } from "obsidian";
-import { DEFAULT_SETTINGS, MindDistillerySettingTab, type MindDistillerySettings } from "./settings";
+import { DEFAULT_SETTINGS, MindDistillerySettingTab, migrateSettings, type MindDistillerySettings } from "./settings";
 import { stringsFor, type Strings } from "./i18n";
 import { requestUrlHttp } from "./llm/obsidianHttp";
 import { LlmService } from "./llm/service";
@@ -208,7 +208,7 @@ export default class MindDistilleryPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const stored = (await this.loadData()) as Partial<MindDistillerySettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, stored ?? {});
+		this.settings = migrateSettings(stored ?? {});
 		if (!this.settings.usageTotal) this.settings.usageTotal = { ...DEFAULT_SETTINGS.usageTotal };
 	}
 

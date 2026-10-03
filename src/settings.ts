@@ -54,6 +54,24 @@ interface RowSpec {
 }
 
 /** Declarative settings (Obsidian ≥ 1.13): heading rows + classic Setting rows in render callbacks. */
+export const CURRENT_SETTINGS_VERSION = 1;
+
+/** Forward migrations keyed by the version the data was written with. */
+const MIGRATIONS: Record<number, (data: Record<string, unknown>) => void> = {
+	0: (data) => {
+		// pre-versioned data: nothing to transform, defaults fill the gaps
+		void data;
+	},
+};
+
+export function migrateSettings(data: Partial<MindDistillerySettings> & Record<string, unknown>): MindDistillerySettings {
+	const from = typeof data.settingsVersion === "number" ? data.settingsVersion : 0;
+	for (let v = from; v < CURRENT_SETTINGS_VERSION; v++) {
+		MIGRATIONS[v]?.(data);
+	}
+	return Object.assign({}, DEFAULT_SETTINGS, data, { settingsVersion: CURRENT_SETTINGS_VERSION });
+}
+
 export class MindDistillerySettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
@@ -218,6 +236,31 @@ export class MindDistillerySettingTab extends PluginSettingTab {
 			},
 		];
 
+		const usage = this.plugin.usage;
+		const totals = usage.total();
+		const usageRows: RowSpec[] = [
+			{
+				name: t.settings.usage,
+				desc: t.settings.usageDesc,
+				configure: (s) => {
+					s.addButton((b) =>
+						b.setIcon("refresh-cw").setTooltip("Reset").onClick(() => {
+							usage.reset();
+							this.plugin.settings.usageTotal = usage.snapshot();
+							void this.plugin.saveSettings();
+						}),
+					);
+					s.addText((text) => {
+						const perCall = usage
+							.perCall()
+							.map((x) => `${x.call} ${x.totalTokens}`)
+							.join(" · ");
+						text.setValue(`total ${totals.totalTokens} tok / ${totals.calls} calls  ${perCall}`);
+					});
+				},
+			},
+		];
+
 		return [
 			this.heading(t.pluginName),
 			...chatRows.map((r) => this.row(r)),
@@ -225,6 +268,8 @@ export class MindDistillerySettingTab extends PluginSettingTab {
 			...transcribeRows.map((r) => this.row(r)),
 			this.heading("Vault"),
 			...vaultRows.map((r) => this.row(r)),
+			this.heading(t.settings.usage),
+			...usageRows.map((r) => this.row(r)),
 		];
 	}
 
