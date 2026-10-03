@@ -22,6 +22,8 @@ export interface MindDistillerySettings {
 	inboxFolder: string;
 	cardsFolder: string;
 	ledgerPath: string;
+	lastDistillAt: string | null;
+	lastReviewAt: string | null;
 	usageTotal: { calls: number; promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
@@ -40,6 +42,8 @@ export const DEFAULT_SETTINGS: MindDistillerySettings = {
 	inboxFolder: "00 Inbox",
 	cardsFolder: "03 Resources/卡片",
 	ledgerPath: "_system/distillery-log.md",
+	lastDistillAt: null,
+	lastReviewAt: null,
 	usageTotal: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0 },
 };
 

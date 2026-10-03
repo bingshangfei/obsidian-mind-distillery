@@ -5,6 +5,10 @@ import { requestUrlHttp } from "./llm/obsidianHttp";
 import { LlmService } from "./llm/service";
 import { UsageLedger } from "./llm/usage";
 import { SecretStore } from "./secrets";
+import { ObsidianVaultIO } from "./io/obsidianio";
+import { DistillPipeline } from "./pipeline/distill";
+import { confirmModal } from "./ui/modal";
+import type { ParaFolders } from "./rules/para";
 
 export default class MindDistilleryPlugin extends Plugin {
 	settings!: MindDistillerySettings;
@@ -14,6 +18,7 @@ export default class MindDistilleryPlugin extends Plugin {
 	usage!: UsageLedger;
 
 	private statusBarItem?: HTMLElement;
+	private distillRunning = false;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -28,6 +33,12 @@ export default class MindDistilleryPlugin extends Plugin {
 
 		this.addRibbonIcon("flask-conical", this.t.commands.testConnection, () => {
 			void this.testConnection();
+		});
+
+		this.addCommand({
+			id: "distill-inbox",
+			name: this.t.commands.distillInbox,
+			callback: () => void this.runDistill(),
 		});
 
 		this.addCommand({
@@ -79,6 +90,53 @@ export default class MindDistilleryPlugin extends Plugin {
 	/** Folder-safe path inside the vault. */
 	path(...segments: string[]): string {
 		return normalizePath(segments.join("/"));
+	}
+
+	private paraFolders(): ParaFolders {
+		return {
+			inbox: this.settings.inboxFolder,
+			projects: "01 Projects",
+			areas: "02 Areas",
+			resources: "03 Resources",
+			archives: "04 Archives",
+		};
+	}
+
+	async runDistill(): Promise<void> {
+		if (this.distillRunning) {
+			new Notice(this.t.notice.alreadyRunning);
+			return;
+		}
+		this.distillRunning = true;
+		const progress = new Notice(this.t.notice.distillRunning, 0);
+		try {
+			const io = new ObsidianVaultIO(this);
+			const pipeline = new DistillPipeline(io, this.llm, {
+				inboxFolder: this.settings.inboxFolder,
+				cardsFolder: this.settings.cardsFolder,
+				folders: this.paraFolders(),
+				confirmBatch: async (count) => {
+					if (this.settings.confirmMode === "auto") return true;
+					return confirmModal(
+						this.app,
+						this.t.notice.confirmBatchTitle,
+						this.t.notice.confirmBatchBody(count),
+					);
+				},
+			});
+			const report = await pipeline.run();
+			progress.hide();
+			const done = report.files.filter((f) => f.status === "done").length;
+			const failed = report.files.filter((f) => f.status === "failed").length;
+			this.settings.lastDistillAt = new Date().toISOString();
+			await this.saveSettings();
+			new Notice(failed === 0 ? this.t.notice.distillDone(done) : this.t.notice.distillPartial(done, failed));
+		} catch (e) {
+			progress.hide();
+			new Notice(this.t.notice.testFail(e instanceof Error ? e.message : String(e)));
+		} finally {
+			this.distillRunning = false;
+		}
 	}
 
 	async loadSettings(): Promise<void> {
