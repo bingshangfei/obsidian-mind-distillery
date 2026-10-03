@@ -1,0 +1,45 @@
+/* Mind Distillery — Review Hub & capture UI */
+
+.md-capture-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.md-capture-row label {
+	flex-shrink: 0;
+}
+
+.md-capture-row input,
+.md-capture-textarea {
+	width: 100%;
+}
+
+.md-capture-textarea {
+	min-height: 140px;
+	resize: vertical;
+}
+
+.md-hub-actions {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.md-hub-section {
+	margin-bottom: 12px;
+}
+
+.md-hub-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 2px 0;
+}
+
+.md-hub-muted {
+	opacity: 0.7;
+	font-size: 0.85em;
+}

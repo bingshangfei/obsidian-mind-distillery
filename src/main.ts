@@ -10,6 +10,7 @@ import { DistillPipeline } from "./pipeline/distill";
 import { WeeklyReviewPipeline } from "./pipeline/review";
 import { confirmModal } from "./ui/modal";
 import { ReviewHubView, REVIEW_HUB_VIEW } from "./ui/reviewhub";
+import { CaptureModal, transcribeFlow } from "./ui/capture";
 import type { ParaFolders } from "./rules/para";
 
 export default class MindDistilleryPlugin extends Plugin {
@@ -56,6 +57,25 @@ export default class MindDistilleryPlugin extends Plugin {
 		});
 
 		this.registerView(REVIEW_HUB_VIEW, (leaf: WorkspaceLeaf) => new ReviewHubView(leaf, this));
+
+		this.addCommand({
+			id: "capture-note",
+			name: this.t.commands.capture,
+			callback: () => {
+				new CaptureModal(this.app, this).open();
+			},
+		});
+
+		this.addCommand({
+			id: "transcribe-audio",
+			name: this.t.commands.transcribe,
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				if (checking) return !!file && /^(mp3|m4a|wav|webm|ogg|flac|mp4)$/.test(file.extension);
+				if (file) void transcribeFlow(this, file);
+				return true;
+			},
+		});
 
 		this.addCommand({
 			id: "test-connection",
