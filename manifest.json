@@ -1,9 +1,9 @@
 {
-  "id": "mind-distillery",
-  "name": "Mind Distillery",
-  "version": "0.1.0",
-  "minAppVersion": "1.13.0",
-  "description": "Distill inbox notes into linked atomic cards, run weekly reviews, and audit your vault health.",
-  "author": "zhang",
-  "isDesktopOnly": true
+	"id": "mind-distillery",
+	"name": "Mind Distillery",
+	"version": "1.0.0",
+	"minAppVersion": "1.13.0",
+	"description": "Distill inbox notes into linked atomic cards, run weekly reviews, and audit your vault health.",
+	"author": "bingshangfei",
+	"isDesktopOnly": true
 }
