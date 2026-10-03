@@ -1,4 +1,4 @@
-import { Notice, Plugin, normalizePath } from "obsidian";
+import { Notice, Plugin, normalizePath, WorkspaceLeaf } from "obsidian";
 import { DEFAULT_SETTINGS, MindDistillerySettingTab, type MindDistillerySettings } from "./settings";
 import { stringsFor, type Strings } from "./i18n";
 import { requestUrlHttp } from "./llm/obsidianHttp";
@@ -7,7 +7,9 @@ import { UsageLedger } from "./llm/usage";
 import { SecretStore } from "./secrets";
 import { ObsidianVaultIO } from "./io/obsidianio";
 import { DistillPipeline } from "./pipeline/distill";
+import { WeeklyReviewPipeline } from "./pipeline/review";
 import { confirmModal } from "./ui/modal";
+import { ReviewHubView, REVIEW_HUB_VIEW } from "./ui/reviewhub";
 import type { ParaFolders } from "./rules/para";
 
 export default class MindDistilleryPlugin extends Plugin {
@@ -42,6 +44,20 @@ export default class MindDistilleryPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "weekly-review",
+			name: this.t.commands.weeklyReview,
+			callback: () => void this.runWeeklyReview(),
+		});
+
+		this.addCommand({
+			id: "open-review-hub",
+			name: this.t.commands.openReviewHub,
+			callback: () => void this.openReviewHub(),
+		});
+
+		this.registerView(REVIEW_HUB_VIEW, (leaf: WorkspaceLeaf) => new ReviewHubView(leaf, this));
+
+		this.addCommand({
 			id: "test-connection",
 			name: this.t.commands.testConnection,
 			callback: () => void this.testConnection(),
@@ -70,6 +86,37 @@ export default class MindDistilleryPlugin extends Plugin {
 		if (!this.statusBarItem) return;
 		const total = this.usage.total();
 		this.statusBarItem.setText(total.calls > 0 ? this.t.statusBar.tokens(total.totalTokens) : "");
+	}
+
+	async runWeeklyReview(): Promise<void> {
+		const progress = new Notice(this.t.notice.reviewRunning, 0);
+		try {
+			const io = new ObsidianVaultIO(this);
+			const review = new WeeklyReviewPipeline(io, this.llm, {
+				cardsFolder: this.settings.cardsFolder,
+				journalFolder: "journal",
+				projectsFolder: "01 Projects",
+				areasFolder: "02 Areas",
+				excludeFolders: ["_system", "wiki", this.app.vault.configDir, this.settings.cardsFolder],
+			});
+			const stats = await review.run();
+			this.settings.lastReviewAt = new Date().toISOString();
+			await this.saveSettings();
+			progress.hide();
+			new Notice(this.t.notice.reviewDone(stats.quizPath ?? "(no quiz — no cards this week)"));
+		} catch (e) {
+			progress.hide();
+			new Notice(this.t.notice.testFail(e instanceof Error ? e.message : String(e)));
+		}
+	}
+
+	async openReviewHub(): Promise<void> {
+		const { workspace } = this.app;
+		const leaf = workspace.getLeavesOfType(REVIEW_HUB_VIEW)[0] ?? workspace.getRightLeaf(false);
+		if (leaf) {
+			await leaf.setViewState({ type: REVIEW_HUB_VIEW, active: true });
+			void workspace.revealLeaf(leaf);
+		}
 	}
 
 	private async testConnection(): Promise<void> {
