@@ -45,7 +45,8 @@ export class NodeFSIO implements VaultIO {
 			for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
 				const full = path.join(dir, entry.name);
 				if (entry.isDirectory()) {
-					if (entry.name === ".obsidian" || entry.name === "node_modules") continue;
+					// Skip hidden dirs (includes the Obsidian config folder) and deps.
+					if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
 					await walk(full);
 				} else if (entry.name.endsWith(".md")) {
 					out.push({ path: this.toRel(full), name: entry.name, basename: fileBasename(entry.name), mtime: 0 });
