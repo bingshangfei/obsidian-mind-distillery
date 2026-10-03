@@ -1,0 +1,30 @@
+{
+  "name": "mind-distillery",
+  "version": "0.1.0",
+  "description": "Distill inbox notes into linked atomic cards, run weekly reviews, and audit your vault health.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test",
+    "version": "node version-bump.mjs"
+  },
+  "keywords": [],
+  "author": "zhang",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/parser": "^8.71.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-obsidianmd": "^0.1.0",
+    "obsidian": "latest",
+    "tslib": "^2.6.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}
